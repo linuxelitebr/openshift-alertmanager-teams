@@ -175,7 +175,7 @@ No cluster de lab, sem pressa e sem risco.
 ./scripts/amctl.sh set-template
 
 # disparar com os labels que voce quer ver
-./scripts/amctl.sh test cluster_banner="ACM - Lab" severity=critical
+./scripts/amctl.sh test 'cluster_banner="ACM - Lab"' severity=critical
 ```
 
 Olhe no canal (use um canal de teste se tiver). Nao gostou? Edite

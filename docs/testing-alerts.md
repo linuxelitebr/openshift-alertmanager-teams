@@ -11,13 +11,18 @@ oc -n openshift-monitoring exec alertmanager-main-0 -- amtool alert add \
   alertname="TesteTemplate" \
   severity=critical \
   namespace=openshift-monitoring \
-  cluster_banner="ACM - Lab" \
+  'cluster_banner="ACM - Lab"' \
   managed_cluster="11111111-1111-1111-1111-111111111111" \
   --annotation=summary="Alerta de teste para validar o template" \
   --annotation=description="Pode ignorar. Estou mexendo no template do email."
 ```
 
 Repare: passar `cluster_banner` e `managed_cluster` na mao e' o que faz o teste valer.
+O `cluster_banner` vai entre quotes **dentro** das quotes do shell. Valor com espaco sem
+quote faz o Alertmanager cair no parser antigo de matchers e logar aviso, dizendo que o
+formato vai deixar de funcionar. Hoje funciona, mas e' aviso de deprecacao. Valor sem
+espaco (`openshift-monitoring`, `openshift-monitoring/k8s`) nao precisa disso.
+
 Sem eles, voce testa um caminho que nao e' o de producao.
 
 ## Serie continua, para iterar no template
@@ -30,7 +35,7 @@ while true; do
     --alertmanager.url http://localhost:9093 \
     alertname="$NAME" \
     severity=critical \
-    cluster_banner="ACM - Lab" \
+    'cluster_banner="ACM - Lab"' \
     --annotation=summary="alerta sintetico"
   sleep 60
 done
