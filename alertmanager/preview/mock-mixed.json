@@ -1,0 +1,46 @@
+{
+  "receiver": "Default",
+  "status": "firing",
+  "externalURL": "https://alertmanager.apps.cluster.example.com",
+  "groupLabels": { "namespace": "openshift-monitoring" },
+  "commonLabels": {
+    "namespace": "openshift-monitoring",
+    "openshift_io_alert_source": "platform",
+    "prometheus": "openshift-monitoring/k8s"
+  },
+  "commonAnnotations": {},
+  "alerts": [
+    {
+      "status": "firing",
+      "labels": {
+        "alertname": "KubeNodeNotReady",
+        "cluster_banner": "ACM - Lab",
+        "managed_cluster": "11111111-1111-1111-1111-111111111111",
+        "namespace": "openshift-monitoring",
+        "node": "worker-03",
+        "severity": "warning"
+      },
+      "annotations": { "summary": "worker-03 has been unready for more than 15 minutes." },
+      "startsAt": "2026-10-21T13:40:00Z",
+      "endsAt": "0001-01-01T00:00:00Z",
+      "generatorURL": "https://console.apps.cluster.example.com/monitoring/graph",
+      "fingerprint": "aaaa111122223333"
+    },
+    {
+      "status": "firing",
+      "labels": {
+        "alertname": "KubeNodeNotReady",
+        "cluster_banner": "ACM - Producao",
+        "managed_cluster": "22222222-2222-2222-2222-222222222222",
+        "namespace": "openshift-monitoring",
+        "node": "worker-11",
+        "severity": "critical"
+      },
+      "annotations": { "summary": "worker-11 has been unready for more than 15 minutes." },
+      "startsAt": "2026-10-21T13:42:30Z",
+      "endsAt": "0001-01-01T00:00:00Z",
+      "generatorURL": "https://console.apps.cluster.example.com/monitoring/graph",
+      "fingerprint": "bbbb444455556666"
+    }
+  ]
+}

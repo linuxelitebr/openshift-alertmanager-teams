@@ -1,0 +1,17 @@
+# O Alertmanager chama este Service pelo DNS interno:
+#   http://teams-webhook-svc.<NAMESPACE>.svc.cluster.local:5000/webhook
+apiVersion: v1
+kind: Service
+metadata:
+  name: teams-webhook-svc
+  namespace: <NAMESPACE>
+  labels:
+    app: openshift-teams-webhook
+spec:
+  selector:
+    app: openshift-teams-webhook
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 5000
+      protocol: TCP

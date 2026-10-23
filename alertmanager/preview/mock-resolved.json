@@ -1,0 +1,35 @@
+{
+  "receiver": "Critical",
+  "status": "resolved",
+  "externalURL": "https://alertmanager.apps.cluster.example.com",
+  "groupLabels": { "namespace": "openshift-storage" },
+  "commonLabels": {
+    "alertname": "CephOSDDown",
+    "cluster_banner": "ACM - Lab",
+    "managed_cluster": "11111111-1111-1111-1111-111111111111",
+    "namespace": "openshift-storage",
+    "severity": "critical"
+  },
+  "commonAnnotations": {},
+  "alerts": [
+    {
+      "status": "resolved",
+      "labels": {
+        "alertname": "CephOSDDown",
+        "cluster_banner": "ACM - Lab",
+        "managed_cluster": "11111111-1111-1111-1111-111111111111",
+        "namespace": "openshift-storage",
+        "osd": "osd.4",
+        "severity": "critical"
+      },
+      "annotations": {
+        "description": "OSD osd.4 is down for more than 5 minutes.",
+        "summary": "Ceph OSD down"
+      },
+      "startsAt": "2026-10-21T12:10:00Z",
+      "endsAt": "2026-10-21T13:55:41Z",
+      "generatorURL": "https://console.apps.cluster.example.com/monitoring/graph",
+      "fingerprint": "cccc777788889999"
+    }
+  ]
+}

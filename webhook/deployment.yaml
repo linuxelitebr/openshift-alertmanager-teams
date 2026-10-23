@@ -1,0 +1,78 @@
+# App proprio que recebe o webhook do Alertmanager e posta no canal do Teams
+# via Microsoft Graph API (OAuth). Usado para severity=warning.
+#
+# Por que existe, se o email ja' entrega: o Office 365 Connector (aquele
+# https://outlook.office.com/webhook/...) foi descontinuado pela Microsoft.
+# O caminho suportado hoje e' Graph API ou Power Automate. Este app faz Graph.
+#
+# Sanitizado. Valores reais ficam no Secret, nunca aqui.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openshift-teams-webhook
+  namespace: <NAMESPACE>
+  labels:
+    app: openshift-teams-webhook
+    app.kubernetes.io/component: webhook
+    app.kubernetes.io/name: openshift-teams-webhook
+    app.kubernetes.io/part-of: monitoring
+spec:
+  replicas: 1
+  # Recreate porque o PVC de token e' RWO: duas replicas brigariam pelo volume.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: openshift-teams-webhook
+  template:
+    metadata:
+      labels:
+        app: openshift-teams-webhook
+      annotations:
+        prometheus.io/scrape: 'false'
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: webhook
+          image: <REGISTRY>/<PROJETO>/openshift-teams-webhook:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 5000
+              protocol: TCP
+          env:
+            # Credenciais do app registrado no Entra ID (Azure AD)
+            - {name: TENANT_ID,        valueFrom: {secretKeyRef: {name: teams-webhook-secrets, key: tenant-id}}}
+            - {name: CLIENT_ID,        valueFrom: {secretKeyRef: {name: teams-webhook-secrets, key: client-id}}}
+            - {name: CLIENT_SECRET,    valueFrom: {secretKeyRef: {name: teams-webhook-secrets, key: client-secret}}}
+            - {name: REDIRECT_URI,     valueFrom: {secretKeyRef: {name: teams-webhook-secrets, key: redirect-uri}}}
+            # Destino no Teams
+            - {name: TEAM_ID,          valueFrom: {secretKeyRef: {name: teams-webhook-secrets, key: team-id}}}
+            - {name: CHANNEL_ID,       valueFrom: {secretKeyRef: {name: teams-webhook-secrets, key: channel-id}}}
+            - {name: FLASK_SECRET_KEY, valueFrom: {secretKeyRef: {name: teams-webhook-secrets, key: flask-secret-key}}}
+            - {name: PORT,             value: '5000'}
+            - {name: PYTHONUNBUFFERED, value: '1'}
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits:   {cpu: 500m, memory: 512Mi}
+          startupProbe:
+            httpGet: {path: /health, port: 5000}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet: {path: /health, port: 5000}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /health, port: 5000}
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          volumeMounts:
+            # Token OAuth persistido. Sem isso, cada restart exige novo consentimento.
+            - name: token-storage
+              mountPath: /app/data
+      volumes:
+        - name: token-storage
+          persistentVolumeClaim:
+            claimName: webhook-tokens-pvc

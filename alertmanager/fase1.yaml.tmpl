@@ -1,0 +1,49 @@
+# FASE 1: entrega pro canal do Teams, SEM template customizado.
+# O objetivo e' provar que o email sai e chega. A aparencia fica pra Fase 2.
+#
+# Os placeholders sao substituidos por cluster. As variaveis derivadas do cluster o script pega
+# sozinho; as de SMTP vem do values.env (gitignored, nunca commitado).
+global:
+  http_config:
+    proxy_from_environment: true
+  smtp_from: '${SMTP_FROM}'
+  smtp_smarthost: '${SMTP_SMARTHOST}'
+  smtp_hello: '${CLUSTER_FQDN}'
+  smtp_auth_username: '${SMTP_USER}'
+  smtp_auth_password: '${SMTP_PASS}'
+  smtp_require_tls: true
+
+inhibit_rules:
+  - equal: [namespace, alertname]
+    source_matchers: [severity = critical]
+    target_matchers: [severity =~ warning|info]
+  - equal: [namespace, alertname]
+    source_matchers: [severity = warning]
+    target_matchers: [severity = info]
+
+receivers:
+  - name: Default
+    email_configs:
+      - to: '${TEAMS_TO}'
+        send_resolved: true
+  - name: Watchdog
+    email_configs:
+      - to: '${TEAMS_TO}'
+        require_tls: true
+  - name: Critical
+    email_configs:
+      - to: '${TEAMS_TO}'
+        send_resolved: true
+        require_tls: true
+
+route:
+  group_by: [namespace]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 12h
+  receiver: Default
+  routes:
+    - receiver: Watchdog
+      matchers: [alertname = Watchdog]
+    - receiver: Critical
+      matchers: [severity = critical]

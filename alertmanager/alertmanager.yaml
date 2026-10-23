@@ -1,0 +1,83 @@
+# Config de REFERENCIA: os dois caminhos de entrega no Teams no mesmo arquivo, com os
+# campos que importam e nada de valor real.
+# Vive no Secret alertmanager-main (chave alertmanager.yaml), namespace openshift-monitoring.
+# Para gerar a sua, use scripts/amctl.sh render: ele preenche por cluster a partir do
+# alertmanager/values.env (gitignored) e deriva o smtp_hello do cluster logado.
+#
+# Extrair o que esta rodando:
+#   oc -n openshift-monitoring get secret alertmanager-main \
+#     -o jsonpath='{.data.alertmanager\.yaml}' | base64 -d > atual.yaml
+#
+# Aplicar:
+#   oc -n openshift-monitoring set data secret/alertmanager-main --from-file=alertmanager.yaml=novo.yaml
+
+global:
+  http_config:
+    proxy_from_environment: true
+  smtp_from: <ALERTMANAGER_FROM>            # ex: ALERTAS@<DOMINIO>
+  smtp_smarthost: '<SMTP_HOST>:25'
+  smtp_hello: <SMTP_HELO_FQDN>              # FQDN que o relay espera no HELO
+  smtp_auth_username: <SMTP_USER>           # valor real NAO vai no git
+  smtp_auth_password: <SMTP_PASSWORD>       # valor real NAO vai no git
+  smtp_require_tls: true
+
+# Silencia o ruido: critical cala warning/info do mesmo alertname+namespace.
+inhibit_rules:
+  - equal: [namespace, alertname]
+    source_matchers: [severity = critical]
+    target_matchers: [severity =~ warning|info]
+  - equal: [namespace, alertname]
+    source_matchers: [severity = warning]
+    target_matchers: [severity = info]
+
+receivers:
+  # ------------------------------------------------------------------
+  # Caminho 1: EMAIL -> endereco do canal do Teams (*.teams.ms).
+  # O Teams so' exibe o email. Quem renderiza o HTML e' o Teams, entao
+  # template complicado com CSS moderno nao sobrevive. Tabela simples vive.
+  # ------------------------------------------------------------------
+  - name: Default
+    email_configs:
+      - to: <TEAMS_CHANNEL_ADDRESS>         # ex: <id>.<dominio>@br.teams.ms
+        from: <ALERTMANAGER_FROM_ALT>
+        send_resolved: true
+        # Descomente para usar o template custom (ver docs/customizing-the-template.md):
+        # headers:
+        #   subject: '{{ template "teams.subject" . }}'
+        # html: '{{ template "teams.html" . }}'
+
+  - name: Watchdog
+    email_configs:
+      - to: <TEAMS_CHANNEL_ADDRESS>
+        require_tls: true
+
+  - name: Critical
+    email_configs:
+      - to: <TEAMS_CHANNEL_ADDRESS>
+        send_resolved: true
+        require_tls: true
+
+  # ------------------------------------------------------------------
+  # Caminho 2: WEBHOOK -> app proprio que posta via Microsoft Graph API.
+  # Usado hoje so' para severity=warning. Ver webhook/.
+  # ------------------------------------------------------------------
+  - name: webhook
+    webhook_configs:
+      - url: http://teams-webhook-svc.<NAMESPACE>.svc.cluster.local:5000/webhook
+
+route:
+  group_by: [namespace]
+  # Estes tres sao os defaults do OpenShift. Em lab da' vontade de baixar para 3s/6s para
+  # nao esperar o alerta, e funciona, mas ai' voce perde o agrupamento que existe justamente
+  # para nao transformar um incidente em 40 emails. Baixe em lab, devolva em producao.
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 12h
+  receiver: Default
+  routes:
+    - receiver: Watchdog
+      matchers: [alertname = Watchdog]
+    - receiver: Critical
+      matchers: [severity = critical]
+    - receiver: webhook
+      matchers: [severity = "warning"]

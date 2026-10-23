@@ -1,0 +1,13 @@
+# Valores reais do ambiente. NUNCA commitar.
+values.local.yaml
+*.local.yaml
+secrets/
+*-secret.yaml
+!*-secret.example.yaml
+
+# HTML renderizado e artefato local, regerado por preview/render.sh
+alertmanager/preview/*.html
+
+# backups contem credencial de SMTP em texto claro. NUNCA commitar.
+backups/
+alertmanager/values.env
